@@ -361,7 +361,7 @@ const STITCH  = "https://cfd-v4-service-channel-stitcher-use1-1.prd.pluto.tv/v2/
 const CORS_PROXIES = [
   url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
   url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-  url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  url => `https://cors.isomorphic-git.org/${url}`,
   url => `https://proxy.cors.sh/${url}`,
   url => `https://cors-proxy.fringe.zone/${url}`,
   url => `https://yacdn.org/proxy/${url}`,
