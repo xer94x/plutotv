@@ -4,13 +4,360 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PlutoTV Player</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap');
+
+  :root {
+    --bg:      #0a0a0f;
+    --surface: #12121a;
+    --card:    #1a1a26;
+    --border:  #2a2a3a;
+    --accent:  #ff6b00;
+    --accent2: #ff9d00;
+    --text:    #e8e8f0;
+    --muted:   #55556a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+  }
+
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  header h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  #status {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  #status .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--muted);
+    transition: background .3s;
+  }
+  #status.ok .dot  { background: #44ff88; }
+  #status.err .dot { background: #ff4444; }
+  #status.loading .dot {
+    background: var(--accent);
+    animation: pulse 1s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  .top-bar {
+    padding: 16px 24px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+  #search {
+    flex: 1;
+    max-width: 400px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 16px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color .2s;
+  }
+  #search:focus { border-color: var(--accent); }
+  #search::placeholder { color: var(--muted); }
+
+  #refresh-btn {
+    background: rgba(255,107,0,.15);
+    border: 1px solid rgba(255,107,0,.4);
+    color: var(--accent);
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background .2s;
+  }
+  #refresh-btn:hover { background: rgba(255,107,0,.28); }
+  #refresh-btn:disabled { opacity: .4; cursor: default; }
+
+  #tip {
+    margin: 14px 24px 0;
+    padding: 10px 16px;
+    background: rgba(255,107,0,.07);
+    border: 1px solid rgba(255,107,0,.2);
+    border-radius: 8px;
+    font-size: 12px;
+    color: var(--accent2);
+    display: none;
+  }
+  #tip.show { display: block; }
+
+  #err-banner {
+    display: none;
+    margin: 14px 24px 0;
+    background: rgba(255,50,50,.08);
+    border: 1px solid rgba(255,50,50,.25);
+    border-radius: 8px;
+    padding: 12px 18px;
+    font-size: 13px;
+    color: #ff8888;
+  }
+  #err-banner.show { display: block; }
+
+  .content { padding: 24px; }
+
+  .category-section { margin-bottom: 32px; }
+
+  .category-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 13px;
+    letter-spacing: 3px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .ch-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px;
+  }
+
+  .ch-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    text-decoration: none;
+    color: var(--text);
+    transition: background .15s, border-color .15s, transform .1s;
+    cursor: pointer;
+  }
+  .ch-card:hover {
+    background: #22223a;
+    border-color: var(--accent);
+    transform: translateY(-1px);
+  }
+  .ch-card:active { transform: translateY(0); }
+
+  .ch-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    color: var(--accent);
+    min-width: 28px;
+    text-align: center;
+  }
+  .ch-info { flex: 1; min-width: 0; }
+  .ch-name {
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .ch-badge {
+    font-size: 9px;
+    background: var(--border);
+    color: var(--muted);
+    padding: 2px 5px;
+    border-radius: 3px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+
+  .skeleton {
+    background: linear-gradient(90deg, var(--card) 25%, #1e1e2e 50%, var(--card) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.2s infinite;
+    border-radius: 10px;
+    height: 52px;
+  }
+  @keyframes shimmer { 0%{background-position:200%} 100%{background-position:-200%} }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>PLUTO TV</h1>
+  <span style="color:var(--muted);font-size:13px;">119 canali IT</span>
+  <div id="status" class="loading">
+    <div class="dot"></div>
+    <span id="status-txt">Ottengo sessione...</span>
+  </div>
+</header>
+
+<div class="top-bar">
+  <input id="search" type="text" placeholder="🔍  Cerca canale..." oninput="renderChannels(this.value)">
+  <button id="refresh-btn" onclick="refreshSession()" disabled>🔄 Rinnova JWT</button>
+</div>
+
+<div id="err-banner"></div>
+<div id="tip">✅ Sessione attiva — clicca un canale per aprirlo nell'estensione video</div>
+
+<div class="content" id="content">
+  <div class="ch-grid">
+    <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
+    <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
+    <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
+    <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
+  </div>
+</div>
 
 <script>
+const CHANNELS = [
+  [  1,"Anime",                         "65b90daed77d450008a43345","hls","Kids / Anime"],
+  [  2,"Barbie & Friends",              "686cfdf894a028da3aac4252","hls","Kids / Anime"],
+  [  3,"Gormiti",                       "66a8c64814a2bb00084d09d6","hls","Kids / Anime"],
+  [  4,"I Puffi",                       "68adb5853efb41cd97ce413d","hls","Kids / Anime"],
+  [  5,"Inazuma Eleven",                "612375086abc84000738fc03","hls","Kids / Anime"],
+  [  6,"Mattel Junior",                 "686cfe983ffa5e0c91cdb5df","hls","Kids / Anime"],
+  [  7,"Super! Cartoni Animati",        "6093f6f8351eb0000754afb8","hls","Kids / Anime"],
+  [  8,"Super! Kids Classics",          "67f4f99729b03f18cb36647e","hls","Kids / Anime"],
+  [  9,"Super! Spongebob",              "6093f9281db477000759fce0","hls","Kids / Anime"],
+  [ 10,"Teenage Mutant Ninja Turtles",  "62619405c733e8000732d1fe","hls","Kids / Anime"],
+  [ 11,"Yu-Gi-Oh!",                     "63eb82e24e83e70008ab735f","hls","Kids / Anime"],
+  [ 12,"Failarmy",                      "608014d19a26320007c92ab6","hls","Comedy"],
+  [ 13,"I Soliti Idioti",               "6602acadb2abe500081cf28a","hls","Comedy"],
+  [ 14,"Just For Laughs Gags",          "6093f48c95132a00075fd859","hls","Comedy"],
+  [ 15,"Lol Just For Laughs",           "65d7211d0d45610008ffcf92","hls","Comedy"],
+  [ 16,"Scherzi E Risate",              "609404b0a8ec810007d8de9d","dash","Comedy"],
+  [ 17,"South Park",                    "62bc1f502b70e3000706298e","hls","Comedy"],
+  [ 18,"Documentari",                   "608aa8a5709d6b0007b132fe","hls","Documentari"],
+  [ 19,"Natura",                        "60802b37709d6b0007b0c549","hls","Documentari"],
+  [ 20,"Naturescape",                   "610a9ebe8c2ac2000734776e","hls","Documentari"],
+  [ 21,"Storia",                        "610a9ebe8c2ac2000734776e","hls","Documentari"],
+  [ 22,"16 Anni e Incinta",             "60940a07d88ba90007b9cb71","hls","Serie / Fiction"],
+  [ 23,"Alice Nevers",                  "66d9aa4315d2c60008d4ac40","hls","Serie / Fiction"],
+  [ 24,"Carabinieri",                   "60940a07d88ba90007b9cb71","hls","Serie / Fiction"],
+  [ 25,"Cherif",                        "66a8c7aefe11e500085b1587","hls","Serie / Fiction"],
+  [ 26,"Geordie Shore",                 "619263ee9541940007d20d60","hls","Serie / Fiction"],
+  [ 27,"Le Sorelle McLeod",             "60a2837f8154ab0007c4dcdf","hls","Serie / Fiction"],
+  [ 28,"Real Life",                     "60801976f92a750007a0699c","hls","Serie / Fiction"],
+  [ 29,"Relic Hunter",                  "60a2837f8154ab0007c4dcdf","hls","Serie / Fiction"],
+  [ 30,"Settimo Cielo",                 "6245d3792792150007e20634","hls","Serie / Fiction"],
+  [ 31,"Shore",                         "67e3b0d2443f0671bc8a1297","hls","Serie / Fiction"],
+  [ 32,"Tandem",                        "66a8c8b3d2d50d000821fc4c","hls","Serie / Fiction"],
+  [ 33,"Teen Mom",                      "62e7fc8c0d061100083946a9","hls","Serie / Fiction"],
+  [ 34,"Real Life+",                    "691c5b2e74baa89ef7230baf","hls","Serie / Fiction"],
+  [ 35,"Alberto Sordi",                 "661f8f01801af800083d9d81","hls","Cinema"],
+  [ 36,"Christmas Tutto L'Anno",        "612e05b885183d0007958101","hls","Cinema"],
+  [ 37,"Cinema Italiano",               "608aa7d8359b270007861489","hls","Cinema"],
+  [ 38,"Cinema Orientale",              "6786235bd648bf0008c2780a","hls","Cinema"],
+  [ 39,"Cinema Poliziottesco",          "671754d8e482950008962aaf","hls","Cinema"],
+  [ 40,"Cinethriller",                  "653660b4295b840008a70ba3","hls","Cinema"],
+  [ 41,"Dive Italiane",                 "6875080e3484d607323641f8","hls","Cinema"],
+  [ 42,"Duri A Morire",                 "65f865a62873090008d06382","hls","Cinema"],
+  [ 43,"Eros",                          "66335489307fa300082bd6e4","hls","Cinema"],
+  [ 44,"Film",                          "608aa17fb9f4490007e6419a","hls","Cinema"],
+  [ 45,"Film Azione",                   "608aa20a2e7f270007c4878d","hls","Cinema"],
+  [ 46,"Film Commedia",                 "608aa512d67fd900072323db","hls","Cinema"],
+  [ 47,"Film Romantici",                "608aa4a4cc92820007b663af","hls","Cinema"],
+  [ 48,"Film Storici",                  "68750875759366af05a151ce","hls","Cinema"],
+  [ 49,"Film Thriller",                 "608aa5e995132a00075f7005","hls","Cinema"],
+  [ 50,"Gli Immortali",                 "6536608b4f123d000876b78b","hls","Cinema"],
+  [ 51,"Horror",                        "61c09e3ac210ed0007606620","hls","Cinema"],
+  [ 52,"Legami Letali",                 "64808a8c536e0c0008a276d1","hls","Cinema"],
+  [ 53,"Sci-Fi",                        "60802d37ee238e0007c94e64","hls","Cinema"],
+  [ 54,"Toto",                          "65253f9881f942000833ccd5","hls","Cinema"],
+  [ 55,"Western",                       "62e7fb67478a5b0007e6c50c","hls","Cinema"],
+  [ 56,"Andromeda",                     "60802d37ee238e0007c94e64","hls","Cinema"],
+  [ 57,"Super! Risate",                 "63eb573ba99571000897135b","hls","Comedy"],
+  [ 58,"Film+",                         "691c5b2e74baa89ef7230baf","hls","Cinema"],
+  [ 61,"Horror Club",                   "66c35c0c92b1af0008c8e83a","hls","Cinema"],
+  [ 62,"Paranormal",                    "66c70033b1a34600087bb09a","hls","Documentari"],
+  [ 63,"Affare Fatto",                  "64ec5c6644fe100009d114ae","hls","Reality"],
+  [ 64,"Catfish",                       "6093f9ed2c75660007322bb7","hls","Reality"],
+  [ 65,"Il Banco Dei Pugni",            "60e4507a06171800072339a3","hls","Reality"],
+  [ 66,"Il Testimone",                  "61fbd3f0733df400076c9a2d","hls","Reality"],
+  [ 67,"Mayday Disastro Aereo",         "690cb9140d121b44ad925ac9","hls","Documentari"],
+  [ 68,"Wicked Tuna",                   "67c832cc9b53325ee16fb899","hls","Reality"],
+  [ 69,"Cucina",                        "608aa718a8ec810007d87fee","hls","Lifestyle"],
+  [ 70,"Extreme Makeover Home Edition", "6661739641af6400080cd8f1","hls","Lifestyle"],
+  [ 71,"Hell's Kitchen",                "664f0ddbf78a8500092dcffa","hls","Lifestyle"],
+  [ 72,"Viaggi",                        "63c923944207be0007fd0887","hls","Lifestyle"],
+  [ 73,"Fifa+",                         "660bfc4424e1d000085b5f93","hls","Sport"],
+  [ 74,"Modus Super Series Darts",      "671655b2daad7f00085d202d","hls","Sport"],
+  [ 75,"Snooker 900",                   "69148c76e9dec35c9269a16c","hls","Sport"],
+  [ 76,"Sport",                         "608030eff4b6f70007e1684c","hls","Sport"],
+  [ 77,"Top Gear",                      "64c109a4798def0008a6e03e","hls","Sport"],
+  [ 78,"Triton Poker",                  "6616a51124e1d00008761a7e","hls","Sport"],
+  [ 79,"UFC",                           "679203d4bc03978b9b4b79a6","hls","Sport"],
+  [ 80,"World Poker Tour",              "608016e446d73500075ea7e0","hls","Sport"],
+  [ 81,"CBS News 24/7",                 "6231ec4b62cd1f0007093c7b","hls","News"],
+  [ 82,"CNN Headlines",                 "66c45ba803e3b20008d8c294","hls","News"],
+  [ 83,"Euronews",                      "61b86ea479a4390007c6d5fc","hls","News"],
+  [ 84,"Notti Di Crimine",              "6911c9b88caba6f046c5ca8f","hls","Crime"],
+  [ 85,"Notti Di Passione",             "6911c9704316999535eb21cf","hls","Crime"],
+  [ 86,"Notti Di Sangue",               "6911c92b4316999535eb1e08","hls","Crime"],
+  [ 87,"Notti Di Terrore",              "6911c8dd8caba6f046c5c5d5","hls","Crime"],
+  [ 88,"Donne Protagoniste",            "69709f3331b356840267c41a","hls","Serie / Fiction"],
+  [ 89,"Nina",                          "691c5b2e74baa89ef7230baf","hls","Serie / Fiction"],
+  [ 90,"Rally TV",                      "696e0fe49ba4ac18057433ac","hls","Sport"],
+  [ 91,"The Intern",                    "69664afedcbf5c784492e422","hls","Serie / Fiction"],
+  [ 92,"The Musketeers",                "64fee60130ab3300084d9157","hls","Serie / Fiction"],
+  [ 94,"Sanctuary",                     "63eb57d6c111bc0008fe2658","hls","Sci-Fi"],
+  [ 96,"Serie Sci-Fi",                  "67ed14aaf7c5d70b9089c3bf","hls","Sci-Fi"],
+  [ 97,"The Asylum",                    "62e8d5369e48940007fc1dc1","hls","Sci-Fi"],
+  [ 98,"BBC Series",                    "62e7fa5ab5062e0007dcf97d","hls","Serie / Fiction"],
+  [ 99,"Mai Dire Si",                   "6349279ed5023700078f2bc2","hls","Comedy"],
+  [100,"Serie",                         "60b9ff2722bfa400072676ef","hls","Serie / Fiction"],
+  [101,"Serie+",                        "691c5b2e74baa89ef7230baf","hls","Serie / Fiction"],
+  [102,"Cin Cin",                       "65cb78b83a116800079e2e35","hls","Comedy"],
+  [103,"Dynasty",                       "65cb76ea11ced70008206b66","hls","Serie / Fiction"],
+  [104,"Love Boat",                     "65cb76723a116800079e1fc3","hls","Serie / Fiction"],
+  [105,"Mission Impossible",            "65cb77853ba51e00084cba02","hls","Serie / Fiction"],
+  [106,"Renegade",                      "634926e4b51d2d00077819a2","hls","Serie / Fiction"],
+  [107,"Autostop Per Il Cielo",         "638f286445264d00084ec6dc","hls","Serie / Fiction"],
+  [108,"Flashpoint",                    "66d7120815d2c60008cec006","hls","Serie / Fiction"],
+  [109,"Serie Crime",                   "608aa777b907770007e5d05d","hls","Crime"],
+  [110,"Squadra Speciale Cobra 11",     "625e6cc905e09f00073addee","hls","Serie / Fiction"],
+  [111,"Sulle Tracce Del Crimine",      "66d9a98961dbf00008efb5fc","hls","Crime"],
+  [112,"Star Trek Voyager",             "65cb73d33ba51e00084cabad","hls","Sci-Fi"],
+  [113,"Super! iCarly",                 "609401db8cf51c00084b592e","hls","Kids / Anime"],
+  [114,"Super! Pop",                    "6093f7b5bb49b90007cecaad","hls","Kids / Anime"],
+  [116,"Winx Club",                     "67851bd7d648bf0008c00bc2","hls","Kids / Anime"],
+  [117,"Forensic Files",                "64ec5cf50f73a800081310a5","hls","Crime"],
+  [118,"Storie Criminali",              "66177d18c8311c0008d077d0","hls","Crime"],
+  [119,"True Crime",                    "66d9ab4bf0f17500084e9b7e","hls","Crime"],
+];
 
 const APP_VER = "9.20.0-89258290264838515e264f5b051b7c1602a58482";
 const BOOT    = "https://boot.pluto.tv/v4/start";
 const STITCH  = "https://cfd-v4-service-channel-stitcher-use1-1.prd.pluto.tv/v2/stitch";
 
+// Proxy CORS pubblici usati come fallback in sequenza
 const CORS_PROXIES = [
   url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
   url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
@@ -20,143 +367,188 @@ const CORS_PROXIES = [
 
 let session = null;
 
-function uuidv4(){
-  return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,c=>
-  (c^crypto.getRandomValues(new Uint8Array(1))[0]&15>>c/4).toString(16))
+function uuidv4() {
+  return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+    (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c/4).toString(16));
 }
 
-function fetchWithTimeout(url,ms=7000){
-  const ctrl=new AbortController()
-  const timer=setTimeout(()=>ctrl.abort(),ms)
-  return fetch(url,{signal:ctrl.signal}).finally(()=>clearTimeout(timer))
+function fetchWithTimeout(url, ms = 7000) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  return fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(timer));
 }
 
-async function boot(){
+async function boot() {
+  const clientID  = uuidv4();
+  const sessionID = uuidv4();
+  const p = new URLSearchParams({
+    appName:"web", appVersion:APP_VER,
+    clientID, clientModelNumber:"1.0.0",
+    country:"IT", deviceDNT:"false",
+    deviceId:clientID, deviceLat:"37.31", deviceLon:"15.14",
+    deviceMake:"chrome", deviceModel:"web", deviceType:"web",
+    deviceVersion:"138.0.0", marketingRegion:"IT",
+    serverSideAds:"false", sessionID, userId:""
+  });
+  const directUrl = `${BOOT}?${p}`;
 
-  const clientID=uuidv4()
-  const sessionID=uuidv4()
+  // Prima tenta diretto (senza proxy)
+  try {
+    const res = await fetchWithTimeout(directUrl, 4000);
+    if (res.ok) {
+      const data = await res.json();
+      const jwt = data.sessionToken || data.jwt || data.token;
+      if (jwt) return { clientID, sessionID, jwt };
+    }
+  } catch(_) {}
 
-  const p=new URLSearchParams({
+  // Tutti i proxy in parallelo: vince il primo che risponde
+  return await Promise.any(
+    CORS_PROXIES.map(proxy => proxy(directUrl)).map(async url => {
+      const res = await fetchWithTimeout(url, 9000);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const jwt = data.sessionToken || data.jwt || data.token;
+      if (!jwt) throw new Error("JWT non trovato");
+      return { clientID, sessionID, jwt };
+    })
+  );
+}
 
-    appName:"web",
+function buildUrl(chId, type, s) {
+  const base = type === "dash"
+    ? `${STITCH}/dash/channel/${chId}/main.mpd`
+    : `${STITCH}/hls/channel/${chId}/master.m3u8`;
+  const p = new URLSearchParams({
+    advertisingId:"", appName:"web", appVersion:APP_VER,
+    app_name:"web", clientDeviceType:"0", clientID:s.clientID,
+    clientModelNumber:"1.0.0", country:"IT", deviceDNT:"false",
+    deviceId:s.clientID, deviceLat:"37.31", deviceLon:"15.14",
+    deviceMake:"chrome", deviceModel:"web", deviceType:"web",
+    deviceVersion:"138.0.0", marketingRegion:"IT",
+    serverSideAds:"false", sessionID:s.sessionID, sid:s.sessionID,
+    userId:"", jwt:s.jwt, masterJWTPassthrough:"true"
+  });
+  return `${base}?${p}`;
+}
 
-    AppVersion:APP_VER,
-    ClientID:clientID,
-    ClientModelNumber:"1.0.0",
+function setStatus(state, txt) {
+  const el = document.getElementById("status");
+  el.className = state;
+  document.getElementById("status-txt").textContent = txt;
+}
 
-    country:"IT",
-    deviceDNT:"false",
+function showErr(msg) {
+  const b = document.getElementById("err-banner");
+  if (msg) { b.textContent = "❌ " + msg; b.classList.add("show"); }
+  else { b.classList.remove("show"); }
+}
 
-    deviceId:clientID,
-    deviceLat:"37.31",
-    deviceLon:"15.14",
+function renderChannels(query) {
+  if (!session) return;
+  const q = (query || "").toLowerCase();
+  const filtered = q
+    ? CHANNELS.filter(([n, name]) => name.toLowerCase().includes(q) || String(n).includes(q))
+    : CHANNELS;
 
-    deviceMake:"chrome",
-    deviceModel:"web",
-    deviceType:"web",
-    deviceVersion:"138.0.0",
+  const groups = {};
+  for (const ch of filtered) {
+    const cat = ch[4];
+    if (!groups[cat]) groups[cat] = [];
+    groups[cat].push(ch);
+  }
 
-    marketingRegion:"IT",
-    serverSideAds:"false",
+  const content = document.getElementById("content");
+  content.innerHTML = "";
 
-    sessionID:sessionID,
-    userId:""
-  })
+  if (filtered.length === 0) {
+    content.innerHTML = `<div style="color:var(--muted);padding:40px;text-align:center">Nessun canale trovato</div>`;
+    return;
+  }
 
-  const directUrl=`${BOOT}?${p}`
+  for (const [cat, chs] of Object.entries(groups)) {
+    const sec = document.createElement("div");
+    sec.className = "category-section";
 
-  try{
+    const title = document.createElement("div");
+    title.className = "category-title";
+    title.textContent = cat;
+    sec.appendChild(title);
 
-    const res=await fetchWithTimeout(directUrl,4000)
+    const grid = document.createElement("div");
+    grid.className = "ch-grid";
 
-    if(res.ok){
-
-      const data=await res.json()
-
-      const jwt=data.sessionToken||data.jwt||data.token
-
-      if(jwt)return{clientID,sessionID,jwt}
-
+    for (const [num, name, chId, type] of chs) {
+      const a = document.createElement("a");
+      a.className = "ch-card";
+      a.href = "#";
+      a.target = "_blank";
+      a.rel = "noopener";
+      a.dataset.chId = chId;
+      a.dataset.type = type;
+      a.innerHTML = `
+        <span class="ch-num">${num}</span>
+        <span class="ch-info"><span class="ch-name">${name}</span></span>
+        <span class="ch-badge">${type}</span>`;
+      a.addEventListener("click", async function(e) {
+        e.preventDefault();
+        // Se la sessione non c'è o il JWT potrebbe essere scaduto, rinnova
+        if (!session) {
+          setStatus("loading", "Ottengo sessione...");
+          try { session = await boot(); setStatus("ok", "Sessione attiva"); }
+          catch(err) { setStatus("err", "Errore sessione"); showErr("Impossibile ottenere sessione: " + err.message); return; }
+        }
+        const url = buildUrl(this.dataset.chId, this.dataset.type, session);
+        window.open(url, "_blank", "noopener");
+      });
+      grid.appendChild(a);
     }
 
-  }catch(_){}
-
-  return await Promise.any(
-
-    CORS_PROXIES.map(proxy=>proxy(directUrl)).map(async url=>{
-
-      const res=await fetchWithTimeout(url,9000)
-
-      if(!res.ok)throw new Error(`HTTP ${res.status}`)
-
-      const data=await res.json()
-
-      const jwt=data.sessionToken||data.jwt||data.token
-
-      if(!jwt)throw new Error("JWT non trovato")
-
-      return{clientID,sessionID,jwt}
-
-    })
-
-  )
-
+    sec.appendChild(grid);
+    content.appendChild(sec);
+  }
 }
 
-function buildUrl(chId,type,s){
-
-  const base=type==="dash"
-  ?`${STITCH}/dash/channel/${chId}/main.mpd`
-  :`${STITCH}/hls/channel/${chId}/master.m3u8`
-
-  const p=new URLSearchParams({
-
-    advertisingId:"",
-    appName:"web",
-    appVersion:APP_VER,
-    app_name:"web",
-
-    clientDeviceType:"0",
-
-    ClientID:s.clientID,
-
-    clientModelNumber:"1.0.0",
-
-    country:"IT",
-
-    deviceDNT:"false",
-    deviceId:s.clientID,
-
-    deviceLat:"37.31",
-    deviceLon:"15.14",
-
-    deviceMake:"chrome",
-    deviceModel:"web",
-    deviceType:"web",
-    deviceVersion:"138.0.0",
-
-    marketingRegion:"IT",
-
-    serverSideAds:"false",
-
-    sessionID:s.sessionID,
-    sid:s.sessionID,
-
-    userId:"",
-
-    jwt:s.jwt,
-
-    masterJWTPassthrough:"true"
-
-  })
-
-  return`${base}?${p}`
-
+async function refreshSession() {
+  const btn = document.getElementById("refresh-btn");
+  btn.disabled = true;
+  setStatus("loading", "Rinnovo sessione...");
+  showErr(null);
+  try {
+    session = await boot();
+    setStatus("ok", "Sessione rinnovata ✓");
+    renderChannels(document.getElementById("search").value);
+    document.getElementById("tip").classList.add("show");
+  } catch(e) {
+    setStatus("err", "Errore");
+    showErr("Impossibile rinnovare: " + e.message);
+  }
+  btn.disabled = false;
 }
 
+(async () => {
+  try {
+    session = await boot();
+    setStatus("ok", "Sessione attiva");
+    document.getElementById("refresh-btn").disabled = false;
+    document.getElementById("tip").classList.add("show");
+    renderChannels();
+    // Rinnovo automatico ogni 30 minuti
+    setInterval(async () => {
+      try {
+        session = await boot();
+        setStatus("ok", "JWT rinnovato automaticamente ✓");
+      } catch(e) {
+        setStatus("err", "Rinnovo automatico fallito");
+      }
+    }, 30 * 60 * 1000);
+  } catch(e) {
+    setStatus("err", "Errore sessione");
+    showErr("Impossibile ottenere la sessione: " + e.message + " — premi 🔄 Rinnova JWT per riprovare.");
+    document.getElementById("content").innerHTML = "";
+    document.getElementById("refresh-btn").disabled = false;
+  }
+})();
 </script>
-
-</head>
-<body>
 </body>
 </html>
