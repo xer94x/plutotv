@@ -361,6 +361,10 @@ const STITCH  = "https://cfd-v4-service-channel-stitcher-use1-1.prd.pluto.tv/v2/
 const CORS_PROXIES = [
   url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
   url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  url => `https://proxy.cors.sh/${url}`,
+  url => `https://cors-proxy.fringe.zone/${url}`,
+  url => `https://yacdn.org/proxy/${url}`,
   url => `https://thingproxy.freeboard.io/fetch/${url}`,
   url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
 ];
@@ -381,9 +385,11 @@ function fetchWithTimeout(url, ms = 7000) {
 async function boot() {
   const clientID  = uuidv4();
   const sessionID = uuidv4();
+  const clientTime = new Date().toISOString();
   const p = new URLSearchParams({
     appName:"web", appVersion:APP_VER,
     clientID, clientModelNumber:"1.0.0",
+    clientTime,
     country:"IT", deviceDNT:"false",
     deviceId:clientID, deviceLat:"37.31", deviceLon:"15.14",
     deviceMake:"chrome", deviceModel:"web", deviceType:"web",
