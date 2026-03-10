@@ -361,7 +361,8 @@ const STITCH  = "https://cfd-v4-service-channel-stitcher-use1-1.prd.pluto.tv/v2/
 const CORS_PROXIES = [
   url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
   url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-  url => `https://proxy.cors.sh/${url}`,
+  url => `https://thingproxy.freeboard.io/fetch/${url}`,
+  url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
 ];
 
 let session = null;
@@ -369,6 +370,12 @@ let session = null;
 function uuidv4() {
   return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
     (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c/4).toString(16));
+}
+
+function fetchWithTimeout(url, ms = 7000) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  return fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(timer));
 }
 
 async function boot() {
@@ -385,26 +392,27 @@ async function boot() {
   });
   const directUrl = `${BOOT}?${p}`;
 
-  // Prova prima diretta, poi ogni proxy in sequenza
-  const attempts = [
-    () => fetch(directUrl),
-    ...CORS_PROXIES.map(proxy => () => fetch(proxy(directUrl)))
-  ];
+  // Prima tenta diretto (senza proxy)
+  try {
+    const res = await fetchWithTimeout(directUrl, 4000);
+    if (res.ok) {
+      const data = await res.json();
+      const jwt = data.sessionToken || data.jwt || data.token;
+      if (jwt) return { clientID, sessionID, jwt };
+    }
+  } catch(_) {}
 
-  let lastErr;
-  for (const attempt of attempts) {
-    try {
-      const res = await attempt();
+  // Tutti i proxy in parallelo: vince il primo che risponde
+  return await Promise.any(
+    CORS_PROXIES.map(proxy => proxy(directUrl)).map(async url => {
+      const res = await fetchWithTimeout(url, 9000);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       const jwt = data.sessionToken || data.jwt || data.token;
-      if (!jwt) throw new Error("JWT non trovato nella risposta");
+      if (!jwt) throw new Error("JWT non trovato");
       return { clientID, sessionID, jwt };
-    } catch(e) {
-      lastErr = e;
-    }
-  }
-  throw new Error("Tutti i proxy falliti. " + lastErr.message);
+    })
+  );
 }
 
 function buildUrl(chId, type, s) {
