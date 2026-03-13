@@ -37,18 +37,53 @@
   .content{padding:24px}
   .category-section{margin-bottom:32px}
   .category-title{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
-  .ch-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
-  .ch-card{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:10px;text-decoration:none;color:var(--text);transition:background .15s,border-color .15s,transform .1s;cursor:pointer}
-  .ch-card:hover{background:#22223a;border-color:var(--accent);transform:translateY(-1px)}
+  .ch-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+  .ch-card{
+    position:relative;
+    aspect-ratio:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:10px 8px 30px;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:12px;
+    text-decoration:none;
+    color:var(--text);
+    cursor:pointer;
+    transition:background .15s,border-color .15s,transform .1s;
+    overflow:hidden;
+  }
+  .ch-card:hover{background:#22223a;border-color:var(--accent);transform:translateY(-2px)}
   .ch-card:active{transform:translateY(0)}
-  .ch-logo{width:36px;height:36px;object-fit:contain;border-radius:6px;background:var(--border);flex-shrink:0}
-  .ch-logo-ph{width:36px;height:36px;border-radius:6px;background:linear-gradient(135deg,var(--accent),var(--accent2));flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:11px;color:#fff}
-  .ch-num{font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--accent);min-width:28px;text-align:center}
-  .ch-info{flex:1;min-width:0}
-  .ch-name{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .ch-badge{font-size:9px;padding:2px 5px;border-radius:3px;letter-spacing:1px;flex-shrink:0;background:rgba(255,107,0,.2);color:var(--accent)}
+  .ch-num{
+    position:absolute;
+    top:8px;left:10px;
+    font-family:'Bebas Neue',sans-serif;
+    font-size:13px;
+    color:var(--accent);
+    letter-spacing:0.5px;
+  }
+  .ch-logo{width:90px;height:90px;object-fit:contain;border-radius:6px}
+  .ch-logo-ph{
+    width:90px;height:90px;border-radius:10px;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Bebas Neue',sans-serif;font-size:20px;color:#fff;
+  }
+  .ch-name{
+    position:absolute;
+    bottom:7px;left:0;right:0;
+    text-align:center;
+    font-size:12px;
+    font-weight:500;
+    color:var(--text);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    padding:0 8px;
+  }
   #ch-count{font-size:13px;color:var(--muted)}
-  .skeleton{background:linear-gradient(90deg,var(--card) 25%,#1e1e2e 50%,var(--card) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;border-radius:10px;height:58px}
+  .skeleton{background:linear-gradient(90deg,var(--card) 25%,#1e1e2e 50%,var(--card) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;border-radius:12px;aspect-ratio:1;min-height:160px}
   @keyframes shimmer{0%{background-position:200%}100%{background-position:-200%}}
 </style>
 </head>
@@ -70,11 +105,11 @@
     <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
     <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
     <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
+    <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
   </div>
 </div>
 
 <script>
-// Playlist Pluto TV Italia da BuddyChewChew - aggiornata ogni giorno automaticamente
 const M3U_URL = "https://raw.githubusercontent.com/BuddyChewChew/app-m3u-generator/refs/heads/main/playlists/plutotv_it.m3u";
 
 let channelsData = [];
@@ -195,16 +230,13 @@ function renderChannels() {
       a.className = "ch-card";
       a.href = "#";
       const initials = (ch.name||'??').split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase();
-      const num = ch.num && ch.num < 9000 ? ch.num : '—';
+      const num = ch.num && ch.num < 9000 ? String(ch.num).padStart(3,'0') : '—';
       a.innerHTML = `
+        <span class="ch-num">${num}</span>
         ${ch.logo
           ? `<img class="ch-logo" src="${ch.logo}" alt="" onerror="this.outerHTML='<div class=ch-logo-ph>${initials}</div>'">`
           : `<div class="ch-logo-ph">${initials}</div>`}
-        <span class="ch-info">
-          <span class="ch-num">${num}</span>
-          <span class="ch-name">${ch.name||''}</span>
-        </span>
-        <span class="ch-badge">HLS</span>`;
+        <span class="ch-name">${ch.name||''}</span>`;
       a.addEventListener("click", e => {
         e.preventDefault();
         if (ch.url) window.open(ch.url, "_blank", "noopener");
